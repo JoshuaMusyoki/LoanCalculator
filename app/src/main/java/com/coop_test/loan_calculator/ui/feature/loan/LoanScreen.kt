@@ -230,7 +230,7 @@ fun LoanContent(
 @Composable
 fun LoanDetailItem(label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = label, fontSize = 12.sp, color = Color.Gray)
+        Text(text = label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(text = value, fontSize = 14.sp, fontWeight = FontWeight.Bold)
     }
 }

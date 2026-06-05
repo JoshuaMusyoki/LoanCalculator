@@ -24,6 +24,14 @@ A robust Android application for calculating loan repayments, viewing amortizati
 
 ---
 
+## Screenshots
+
+| Main Screen | Apply Loan | Confirmation |
+| :---: | :---: | :---: |
+| ![Main Screen](screenshots/main_screen.png) | ![Apply Loan](screenshots/apply_loan.png) | ![Confirmation](screenshots/confirmation.png) |
+
+---
+
 ## Architecture Overview
 
 The project follows **Clean Architecture** principles and the **MVI (Model-View-Intent)** pattern for the UI layer to ensure separation of concerns, testability, and a predictable state flow.

@@ -10,6 +10,7 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
+/**To Handle Base URL & Serialization for external Database Sysnc in Future*/
 object KtorClientFactory {
     fun create(): HttpClient {
         return HttpClient(CIO) {
