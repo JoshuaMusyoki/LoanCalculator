@@ -15,6 +15,7 @@ data class LoanState(
     val amortizationSchedule: List<AmortizationScheduleItem> = emptyList(),
     val loanOptions: List<LoanOption> = emptyList(),
     val savedCalculations: List<LoanCalculation> = emptyList(),
+    val savedSchedules: Map<Int, List<AmortizationScheduleItem>> = emptyMap(),
     val error: String? = null
 ): UiState
 

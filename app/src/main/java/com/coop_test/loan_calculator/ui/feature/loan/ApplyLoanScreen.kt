@@ -1,32 +1,16 @@
 package com.coop_test.loan_calculator.ui.feature.loan
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.VerticalDivider
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -53,12 +37,14 @@ fun ApplyLoanScreen(
 ) {
     var amount by remember { mutableStateOf("10,000.00") }
     var period by remember { mutableStateOf("2") }
-    val loanLimit = 12000.00
+    var expandedPeriod by remember { mutableStateOf(false) }
+    var loanLimit by remember { mutableStateOf(12000.00) }
+    var expandedLimit by remember { mutableStateOf(false) }
     
     val currentAmount = amount.replace(",", "").toDoubleOrNull() ?: 0.0
     val isError = currentAmount > loanLimit
 
-    LaunchedEffect(amount, period) {
+    LaunchedEffect(amount, period, loanLimit) {
         val cleanAmount = amount.replace(",", "").toDoubleOrNull() ?: 0.0
         val tenure = period.toIntOrNull() ?: 0
         if (cleanAmount > 0 && cleanAmount <= loanLimit && tenure > 0) {
@@ -74,8 +60,36 @@ fun ApplyLoanScreen(
             .background(MaterialTheme.colorScheme.background)
             .padding(16.dp),
     ) {
-        LabelText("Loan Type")
-        ReadOnlyField(option.name, Icons.Default.ArrowDropDown)
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                LabelText("Loan Type")
+                ReadOnlyField(option.name, Icons.Default.ArrowDropDown)
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(0.6f)) {
+                LabelText("Your Limit")
+                Box {
+                    Box(modifier = Modifier.clickable { expandedLimit = true }) {
+                        ReadOnlyField(String.format(Locale.US, "%,.0f", loanLimit), Icons.Default.ArrowDropDown)
+                    }
+                    DropdownMenu(
+                        expanded = expandedLimit,
+                        onDismissRequest = { expandedLimit = false }
+                    ) {
+                        listOf(5000.0, 10000.0, 12000.0, 20000.0, 50000.0).forEach { limit ->
+                            DropdownMenuItem(
+                                text = { Text(String.format(Locale.US, "%,.0f KES", limit)) },
+                                onClick = {
+                                    loanLimit = limit
+                                    expandedLimit = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        
         Text(
             text = "Interest: ${option.minInterestRate}% p.a",
             color = MaterialTheme.colorScheme.primary,
@@ -114,7 +128,26 @@ fun ApplyLoanScreen(
         )
 
         LabelText("Loan Period (months)")
-        ReadOnlyField(period, Icons.Default.ArrowDropDown)
+        Box {
+            Box(modifier = Modifier.clickable { expandedPeriod = true }) {
+                ReadOnlyField(period, Icons.Default.ArrowDropDown)
+            }
+            DropdownMenu(
+                expanded = expandedPeriod,
+                onDismissRequest = { expandedPeriod = false },
+                modifier = Modifier.fillMaxWidth(0.9f)
+            ) {
+                listOf("1", "2", "3", "6", "12").forEach { p ->
+                    DropdownMenuItem(
+                        text = { Text(p) },
+                        onClick = {
+                            period = p
+                            expandedPeriod = false
+                        }
+                    )
+                }
+            }
+        }
 
         Text(
             text = "Total Amount Payable: ${String.format(Locale.US, "%,.2f", calculation?.totalPayment ?: 0.0)} KES",

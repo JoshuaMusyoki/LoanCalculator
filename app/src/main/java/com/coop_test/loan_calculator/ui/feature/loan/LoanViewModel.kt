@@ -91,9 +91,14 @@ class LoanViewModel(
         fetchJob = loanRepository.getSavedCalculations()
             .onEach { saved ->
                 val active = saved.firstOrNull()
+                val schedules = saved.associate { loan ->
+                    loan.id to calculateLoanUseCase(loan.principal, loan.interestRate, loan.tenureMonths).second
+                }
+
                 _state.update { it.copy(
                     savedCalculations = saved,
-                    activeLoan = active
+                    activeLoan = active,
+                    savedSchedules = schedules
                 ) }
                 
                 // load the schedule for the active loan.

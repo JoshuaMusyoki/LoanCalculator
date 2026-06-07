@@ -1,6 +1,7 @@
 package com.coop_test.loan_calculator.ui.feature.loan
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,7 +9,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -204,17 +207,28 @@ fun LoanContent(
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        if (state.activeLoan != null) {
+        if (state.savedCalculations.isNotEmpty()) {
             item {
                 Spacer(modifier = Modifier.height(16.dp))
                 SectionTitle("Active Loans")
-                ActiveLoanCard(
-                    state.activeLoan,
-                    onClick = {
-                        onIntent(LoanIntent.LoadActiveLoanSchedule)
-                        onNavigateToSchedule()
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(state.savedCalculations) { loan ->
+                        Box(modifier = Modifier.width(320.dp)) {
+                            ActiveLoanCard(
+                                loan = loan,
+                                onClick = {
+                                    // Normally we'd load the schedule for THIS specific loan
+                                    // For now, we'll keep the logic to load active loan schedule
+                                    onIntent(LoanIntent.LoadActiveLoanSchedule)
+                                    onNavigateToSchedule()
+                                }
+                            )
+                        }
                     }
-                )
+                }
             }
             item {
                 SectionTitle("Other Loans Available")

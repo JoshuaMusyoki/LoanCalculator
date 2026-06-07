@@ -14,6 +14,8 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.coop_test.loan_calculator.domain.model.AmortizationScheduleItem
+import com.coop_test.loan_calculator.domain.model.LoanCalculation
+import com.coop_test.loan_calculator.ui.base.LoanState
 import com.coop_test.loan_calculator.ui.theme.TestAppTheme
 import java.util.Locale
 
@@ -24,7 +26,7 @@ fun ScheduleScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     ScheduleContent(
-        amortizationSchedule = state.amortizationSchedule,
+        state = state,
         onBack = onBack
     )
 }
@@ -32,13 +34,13 @@ fun ScheduleScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScheduleContent(
-    amortizationSchedule: List<AmortizationScheduleItem>,
+    state: LoanState,
     onBack: () -> Unit
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Amortization Schedule") },
+                title = { Text("Amortization Schedules") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -52,17 +54,53 @@ fun ScheduleContent(
                 .padding(padding)
                 .fillMaxSize()
         ) {
-            item {
-                ScheduleHeader()
-            }
-            items(amortizationSchedule) { item ->
-                ScheduleRow(
-                    month = item.month,
-                    principal = item.principalPaid,
-                    interest = item.interestPaid,
-                    balance = item.closingBalance
-                )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            if (state.savedCalculations.isEmpty()) {
+                item {
+                    Box(modifier = Modifier.fillParentMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
+                        Text("No saved loans found")
+                    }
+                }
+            } else {
+                state.savedCalculations.forEach { loan ->
+                    item {
+                        Surface(
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = "Loan: Salary E-Loan",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "Principal: ${String.format(Locale.US, "%,.2f", loan.principal)} KES",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
+                    }
+                    
+                    item {
+                        ScheduleHeader()
+                    }
+
+                    val schedule = state.savedSchedules[loan.id] ?: emptyList()
+                    items(schedule) { item ->
+                        ScheduleRow(
+                            month = item.month,
+                            emi = item.monthlyPayment,
+                            principal = item.principalPaid,
+                            interest = item.interestPaid,
+                            balance = item.closingBalance
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                    }
+                    
+                    item {
+                        Spacer(modifier = Modifier.height(32.dp))
+                    }
+                }
             }
         }
     }
@@ -76,16 +114,18 @@ fun ScheduleHeader() {
             .padding(16.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text("Month", fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-        Text("Principal", fontWeight = FontWeight.Bold, modifier = Modifier.weight(2f))
-        Text("Interest", fontWeight = FontWeight.Bold, modifier = Modifier.weight(2f))
-        Text("Balance", fontWeight = FontWeight.Bold, modifier = Modifier.weight(2f))
+        Text("No.", fontWeight = FontWeight.Bold, modifier = Modifier.weight(0.7f))
+        Text("EMI", fontWeight = FontWeight.Bold, modifier = Modifier.weight(1.5f))
+        Text("Principal", fontWeight = FontWeight.Bold, modifier = Modifier.weight(1.5f))
+        Text("Interest", fontWeight = FontWeight.Bold, modifier = Modifier.weight(1.5f))
+        Text("Balance", fontWeight = FontWeight.Bold, modifier = Modifier.weight(1.8f))
     }
 }
 
 @Composable
 fun ScheduleRow(
     month: Int,
+    emi: Double,
     principal: Double,
     interest: Double,
     balance: Double
@@ -96,10 +136,11 @@ fun ScheduleRow(
             .padding(16.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(month.toString(), modifier = Modifier.weight(1f))
-        Text(String.format(Locale.US, "%,.0f", principal), modifier = Modifier.weight(2f))
-        Text(String.format(Locale.US, "%,.0f", interest), modifier = Modifier.weight(2f))
-        Text(String.format(Locale.US, "%,.0f", balance), modifier = Modifier.weight(2f))
+        Text(month.toString(), modifier = Modifier.weight(0.7f))
+        Text(String.format(Locale.US, "%,.0f", emi), modifier = Modifier.weight(1.5f))
+        Text(String.format(Locale.US, "%,.0f", principal), modifier = Modifier.weight(1.5f))
+        Text(String.format(Locale.US, "%,.0f", interest), modifier = Modifier.weight(1.5f))
+        Text(String.format(Locale.US, "%,.0f", balance), modifier = Modifier.weight(1.8f))
     }
 }
 
@@ -109,12 +150,24 @@ fun ScheduleScreenPreview() {
     TestAppTheme {
         Surface {
             ScheduleContent(
-                amortizationSchedule = listOf(
-                    AmortizationScheduleItem(1, 200000.0, 20000.0, 5000.0, 15000.0, 185000.0),
-                    AmortizationScheduleItem(2, 185000.0, 20000.0, 4800.0, 15200.0, 169800.0),
-                    AmortizationScheduleItem(3, 169800.0, 20000.0, 4600.0, 15400.0, 154400.0),
-                    AmortizationScheduleItem(4, 154400.0, 20000.0, 4400.0, 15600.0, 138800.0),
-                    AmortizationScheduleItem(5, 138800.0, 20000.0, 4200.0, 15800.0, 123000.0)
+                state = LoanState(
+                    savedCalculations = listOf(
+                        LoanCalculation(
+                            id = 1,
+                            principal = 200000.0,
+                            interestRate = 12.0,
+                            tenureMonths = 5,
+                            monthlyPayment = 41208.0,
+                            totalInterest = 6040.0,
+                            totalPayment = 206040.0
+                        )
+                    ),
+                    savedSchedules = mapOf(
+                        1 to listOf(
+                            AmortizationScheduleItem(1, 200000.0, 41208.0, 2000.0, 39208.0, 160792.0),
+                            AmortizationScheduleItem(2, 160792.0, 41208.0, 1608.0, 39600.0, 121192.0)
+                        )
+                    )
                 ),
                 onBack = {}
             )
