@@ -38,13 +38,12 @@ fun ApplyLoanScreen(
     var amount by remember { mutableStateOf("10,000.00") }
     var period by remember { mutableStateOf("2") }
     var expandedPeriod by remember { mutableStateOf(false) }
-    var loanLimit by remember { mutableStateOf(12000.00) }
-    var expandedLimit by remember { mutableStateOf(false) }
+    val loanLimit = 12000.00
     
     val currentAmount = amount.replace(",", "").toDoubleOrNull() ?: 0.0
     val isError = currentAmount > loanLimit
 
-    LaunchedEffect(amount, period, loanLimit) {
+    LaunchedEffect(amount, period) {
         val cleanAmount = amount.replace(",", "").toDoubleOrNull() ?: 0.0
         val tenure = period.toIntOrNull() ?: 0
         if (cleanAmount > 0 && cleanAmount <= loanLimit && tenure > 0) {
@@ -60,35 +59,8 @@ fun ApplyLoanScreen(
             .background(MaterialTheme.colorScheme.background)
             .padding(16.dp),
     ) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f)) {
-                LabelText("Loan Type")
-                ReadOnlyField(option.name, Icons.Default.ArrowDropDown)
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(0.6f)) {
-                LabelText("Your Limit")
-                Box {
-                    Box(modifier = Modifier.clickable { expandedLimit = true }) {
-                        ReadOnlyField(String.format(Locale.US, "%,.0f", loanLimit), Icons.Default.ArrowDropDown)
-                    }
-                    DropdownMenu(
-                        expanded = expandedLimit,
-                        onDismissRequest = { expandedLimit = false }
-                    ) {
-                        listOf(5000.0, 10000.0, 12000.0, 20000.0, 50000.0).forEach { limit ->
-                            DropdownMenuItem(
-                                text = { Text(String.format(Locale.US, "%,.0f KES", limit)) },
-                                onClick = {
-                                    loanLimit = limit
-                                    expandedLimit = false
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-        }
+        LabelText("Loan Type")
+        ReadOnlyField(option.name, Icons.Default.ArrowDropDown)
         
         Text(
             text = "Interest: ${option.minInterestRate}% p.a",
