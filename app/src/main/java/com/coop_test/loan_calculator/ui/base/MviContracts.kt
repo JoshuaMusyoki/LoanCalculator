@@ -24,6 +24,7 @@ sealed interface LoanIntent : UiIntent {
     data class Delete(val calculation: LoanCalculation) : LoanIntent
     object FetchOptions : LoanIntent
     object FetchSaved : LoanIntent
+    object LoadActiveLoanSchedule : LoanIntent
 }
 
 sealed interface LoanEffect : UiEffect {

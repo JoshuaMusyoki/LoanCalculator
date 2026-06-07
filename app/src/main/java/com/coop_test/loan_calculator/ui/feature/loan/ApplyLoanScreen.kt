@@ -1,5 +1,6 @@
 package com.coop_test.loan_calculator.ui.feature.loan
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Button
@@ -28,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
@@ -51,22 +54,25 @@ fun ApplyLoanScreen(
     var amount by remember { mutableStateOf("10,000.00") }
     var period by remember { mutableStateOf("2") }
     val loanLimit = 12000.00
+    
+    val currentAmount = amount.replace(",", "").toDoubleOrNull() ?: 0.0
+    val isError = currentAmount > loanLimit
 
     LaunchedEffect(amount, period) {
         val cleanAmount = amount.replace(",", "").toDoubleOrNull() ?: 0.0
         val tenure = period.toIntOrNull() ?: 0
-        if (cleanAmount > 0 && tenure > 0) {
+        if (cleanAmount > 0 && cleanAmount <= loanLimit && tenure > 0) {
             onIntent(LoanIntent.Calculate(cleanAmount, option.minInterestRate, tenure))
         }
     }
 
     val calculation = state.loanCalculation
     val schedule = state.amortizationSchedule
-
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .background(MaterialTheme.colorScheme.background)
+            .padding(16.dp),
     ) {
         LabelText("Loan Type")
         ReadOnlyField(option.name, Icons.Default.ArrowDropDown)
@@ -80,14 +86,18 @@ fun ApplyLoanScreen(
         LabelText("Loan Amount")
         OutlinedTextField(
             value = amount,
-            onValueChange = { amount = it },
+            onValueChange = { newValue ->
+                amount = newValue
+            },
             modifier = Modifier.fillMaxWidth(),
+            isError = isError,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             leadingIcon = {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 12.dp)) {
                     Text(
                         "KES",
                         style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     VerticalDivider(modifier = Modifier.height(24.dp).width(1.dp))
@@ -96,8 +106,9 @@ fun ApplyLoanScreen(
             shape = RoundedCornerShape(8.dp)
         )
         Text(
-            text = "Available Loan Limit: ${String.format(Locale.US, "%,.2f", loanLimit)} KES",
-            color = MaterialTheme.colorScheme.primary,
+            text = if (isError) "Amount exceeds your loan limit of ${String.format(Locale.US, "%,.2f", loanLimit)} KES" 
+                  else "Available Loan Limit: ${String.format(Locale.US, "%,.2f", loanLimit)} KES",
+            color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
         )
@@ -129,7 +140,7 @@ fun ApplyLoanScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         LazyColumn(modifier = Modifier.weight(1f)) {
-            items(schedule) { item ->
+            items(if (isError) emptyList() else schedule) { item ->
                 val calendar = Calendar.getInstance()
                 val sdf = SimpleDateFormat("dd MMM yyyy", Locale.US)
                 val installmentDate = sdf.format(calendar.apply { add(Calendar.MONTH, item.month) }.time)
@@ -150,7 +161,7 @@ fun ApplyLoanScreen(
                 .height(56.dp),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             shape = RoundedCornerShape(8.dp),
-            enabled = calculation != null
+            enabled = calculation != null && !isError
         ) {
             Text(
                 "Apply Loan",

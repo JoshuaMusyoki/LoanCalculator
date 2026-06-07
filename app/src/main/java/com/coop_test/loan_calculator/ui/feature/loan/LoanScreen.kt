@@ -32,6 +32,7 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.coop_test.loan_calculator.Screen
 import com.coop_test.loan_calculator.domain.model.LoanOption
 import com.coop_test.loan_calculator.ui.base.LoanEffect
 import com.coop_test.loan_calculator.ui.base.LoanIntent
@@ -178,6 +179,7 @@ fun LoanScreenContent(
             modifier = modifier.padding(padding),
             state = state,
             onIntent = onIntent,
+            onNavigateToSchedule = onNavigateToSchedule,
             onApplyClick = { option ->
                 selectedOption = option
                 showCalculator = true
@@ -193,6 +195,7 @@ fun LoanContent(
     modifier: Modifier = Modifier,
     state: LoanState,
     onIntent: (LoanIntent) -> Unit,
+    onNavigateToSchedule: () -> Unit,
     onApplyClick: (LoanOption) -> Unit
 ) {
     LazyColumn(
@@ -205,7 +208,13 @@ fun LoanContent(
             item {
                 Spacer(modifier = Modifier.height(16.dp))
                 SectionTitle("Active Loans")
-                ActiveLoanCard(state.activeLoan)
+                ActiveLoanCard(
+                    state.activeLoan,
+                    onClick = {
+                        onIntent(LoanIntent.LoadActiveLoanSchedule)
+                        onNavigateToSchedule()
+                    }
+                )
             }
             item {
                 SectionTitle("Other Loans Available")
