@@ -1,6 +1,7 @@
 package com.coop_test.loan_calculator.ui.feature.loan
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,7 +9,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -32,6 +35,7 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.coop_test.loan_calculator.Screen
 import com.coop_test.loan_calculator.domain.model.LoanOption
 import com.coop_test.loan_calculator.ui.base.LoanEffect
 import com.coop_test.loan_calculator.ui.base.LoanIntent
@@ -178,6 +182,7 @@ fun LoanScreenContent(
             modifier = modifier.padding(padding),
             state = state,
             onIntent = onIntent,
+            onNavigateToSchedule = onNavigateToSchedule,
             onApplyClick = { option ->
                 selectedOption = option
                 showCalculator = true
@@ -193,6 +198,7 @@ fun LoanContent(
     modifier: Modifier = Modifier,
     state: LoanState,
     onIntent: (LoanIntent) -> Unit,
+    onNavigateToSchedule: () -> Unit,
     onApplyClick: (LoanOption) -> Unit
 ) {
     LazyColumn(
@@ -201,11 +207,28 @@ fun LoanContent(
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        if (state.activeLoan != null) {
+        if (state.savedCalculations.isNotEmpty()) {
             item {
                 Spacer(modifier = Modifier.height(16.dp))
                 SectionTitle("Active Loans")
-                ActiveLoanCard(state.activeLoan)
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(state.savedCalculations) { loan ->
+                        Box(modifier = Modifier.width(320.dp)) {
+                            ActiveLoanCard(
+                                loan = loan,
+                                onClick = {
+                                    // Normally we'd load the schedule for THIS specific loan
+                                    // For now, we'll keep the logic to load active loan schedule
+                                    onIntent(LoanIntent.LoadActiveLoanSchedule)
+                                    onNavigateToSchedule()
+                                }
+                            )
+                        }
+                    }
+                }
             }
             item {
                 SectionTitle("Other Loans Available")

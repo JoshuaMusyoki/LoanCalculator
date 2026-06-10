@@ -15,6 +15,7 @@ data class LoanState(
     val amortizationSchedule: List<AmortizationScheduleItem> = emptyList(),
     val loanOptions: List<LoanOption> = emptyList(),
     val savedCalculations: List<LoanCalculation> = emptyList(),
+    val savedSchedules: Map<Int, List<AmortizationScheduleItem>> = emptyMap(),
     val error: String? = null
 ): UiState
 
@@ -24,6 +25,7 @@ sealed interface LoanIntent : UiIntent {
     data class Delete(val calculation: LoanCalculation) : LoanIntent
     object FetchOptions : LoanIntent
     object FetchSaved : LoanIntent
+    object LoadActiveLoanSchedule : LoanIntent
 }
 
 sealed interface LoanEffect : UiEffect {

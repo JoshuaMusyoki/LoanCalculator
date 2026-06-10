@@ -8,6 +8,7 @@ import com.coop_test.loan_calculator.domain.usecases.CalculateLoanUseCase
 import com.coop_test.loan_calculator.ui.base.LoanEffect
 import com.coop_test.loan_calculator.ui.base.LoanIntent
 import com.coop_test.loan_calculator.ui.base.LoanState
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -23,6 +24,8 @@ class LoanViewModel(
     private val _effect = Channel<LoanEffect>(Channel.BUFFERED)
     val effect: Flow<LoanEffect> = _effect.receiveAsFlow()
 
+    private var fetchJob: Job? = null
+
     init {
         handleIntent(LoanIntent.FetchOptions)
         handleIntent(LoanIntent.FetchSaved)
@@ -35,6 +38,7 @@ class LoanViewModel(
             is LoanIntent.Delete -> deleteCalculation(intent.calculation)
             LoanIntent.FetchOptions -> fetchOptions()
             LoanIntent.FetchSaved -> fetchSavedCalculations()
+            LoanIntent.LoadActiveLoanSchedule -> loadActiveLoanSchedule()
         }
     }
 
@@ -59,8 +63,13 @@ class LoanViewModel(
 
     private fun saveCalculation(calculation: LoanCalculation) {
         viewModelScope.launch {
-            loanRepository.saveCalculation(calculation)
-            _effect.send(LoanEffect.ShowSnackbar("Calculation saved successfully"))
+            try {
+                loanRepository.saveCalculation(calculation)
+                _state.update { it.copy(loanCalculation = null) } // Reset current calculation
+                _effect.send(LoanEffect.ShowSnackbar("Calculation saved successfully"))
+            } catch (e: Exception) {
+                _effect.send(LoanEffect.ShowSnackbar("Failed to save: ${e.message}"))
+            }
         }
     }
 
@@ -78,13 +87,37 @@ class LoanViewModel(
     }
 
     private fun fetchSavedCalculations() {
-        loanRepository.getSavedCalculations()
+        fetchJob?.cancel()
+        fetchJob = loanRepository.getSavedCalculations()
             .onEach { saved ->
+                val active = saved.firstOrNull()
+                val schedules = saved.associate { loan ->
+                    loan.id to calculateLoanUseCase(loan.principal, loan.interestRate, loan.tenureMonths).second
+                }
+
                 _state.update { it.copy(
                     savedCalculations = saved,
-                    activeLoan = saved.firstOrNull() // Demo: first saved is active
+                    activeLoan = active,
+                    savedSchedules = schedules
                 ) }
+                
+                // load the schedule for the active loan.
+                if (active != null && _state.value.loanCalculation == null) {
+                    loadActiveLoanSchedule()
+                }
             }
             .launchIn(viewModelScope)
+    }
+
+    private fun loadActiveLoanSchedule() {
+        val active = _state.value.activeLoan ?: return
+        viewModelScope.launch {
+            try {
+                val (_, schedule) = calculateLoanUseCase(active.principal, active.interestRate, active.tenureMonths)
+                _state.update { it.copy(amortizationSchedule = schedule) }
+            } catch (e: Exception) {
+                // Log error
+            }
+        }
     }
 }
